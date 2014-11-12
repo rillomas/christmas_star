@@ -1,0 +1,85 @@
+[root]
+name = "rust_sample_2"
+version = "0.0.1"
+dependencies = [
+ "gl 0.0.1 (git+https://github.com/bjz/gl-rs)",
+ "glutin 0.0.1 (git+https://github.com/tomaka/glutin.git)",
+]
+
+[[package]]
+name = "android_glue"
+version = "0.0.1"
+source = "git+https://github.com/tomaka/android-rs-glue#fe9acb5bd465da1df4561e2bd4ebcc6d305134a4"
+dependencies = [
+ "compile_msg 0.1.0 (git+https://github.com/huonw/compile_msg)",
+]
+
+[[package]]
+name = "cocoa"
+version = "0.1.1"
+source = "git+https://github.com/DavidPartouche/rust-cocoa#0a951a6cdd5f1a175b929754c134f9443b105642"
+
+[[package]]
+name = "compile_msg"
+version = "0.1.0"
+source = "git+https://github.com/huonw/compile_msg#569c6f186a4ec4f6e8970dff4302b524b95ecbeb"
+
+[[package]]
+name = "core_foundation"
+version = "0.1.0"
+source = "git+https://github.com/servo/rust-core-foundation#6fa0b908f3912e20d081193e83bf5a9aa958fb83"
+
+[[package]]
+name = "core_graphics"
+version = "0.1.0"
+source = "git+https://github.com/servo/rust-core-graphics#9434e2bda65d259f825104170b5fa6cc6dbaf5a9"
+dependencies = [
+ "core_foundation 0.1.0 (git+https://github.com/servo/rust-core-foundation)",
+]
+
+[[package]]
+name = "gl"
+version = "0.0.1"
+source = "git+https://github.com/bjz/gl-rs#8cc900ad44a8f8ac28d9a0402b49a472712966cb"
+dependencies = [
+ "gl_generator 0.0.1 (git+https://github.com/bjz/gl-rs)",
+]
+
+[[package]]
+name = "gl_common"
+version = "0.0.1"
+source = "git+https://github.com/bjz/gl-rs#8cc900ad44a8f8ac28d9a0402b49a472712966cb"
+
+[[package]]
+name = "gl_generator"
+version = "0.0.1"
+source = "git+https://github.com/bjz/gl-rs#8cc900ad44a8f8ac28d9a0402b49a472712966cb"
+dependencies = [
+ "gl_common 0.0.1 (git+https://github.com/bjz/gl-rs)",
+ "khronos_api 0.0.1 (git+https://github.com/bjz/gl-rs)",
+ "rust-xml 0.1.0 (git+https://github.com/netvl/rust-xml)",
+]
+
+[[package]]
+name = "glutin"
+version = "0.0.1"
+source = "git+https://github.com/tomaka/glutin.git#6995878cea9b87a3ada6bd0bfbe16c4a950c7a1d"
+dependencies = [
+ "android_glue 0.0.1 (git+https://github.com/tomaka/android-rs-glue)",
+ "cocoa 0.1.1 (git+https://github.com/DavidPartouche/rust-cocoa)",
+ "compile_msg 0.1.0 (git+https://github.com/huonw/compile_msg)",
+ "core_graphics 0.1.0 (git+https://github.com/servo/rust-core-graphics)",
+ "gl_common 0.0.1 (git+https://github.com/bjz/gl-rs)",
+ "gl_generator 0.0.1 (git+https://github.com/bjz/gl-rs)",
+]
+
+[[package]]
+name = "khronos_api"
+version = "0.0.1"
+source = "git+https://github.com/bjz/gl-rs#8cc900ad44a8f8ac28d9a0402b49a472712966cb"
+
+[[package]]
+name = "rust-xml"
+version = "0.1.0"
+source = "git+https://github.com/netvl/rust-xml#d6c57380a300b94f7e7881979dbe5459dbe4ca06"
+
