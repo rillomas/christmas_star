@@ -75,33 +75,63 @@ fn remove_program(program: GLuint) {
     }
 }
 
-fn main() {
-    let vss = read_shader("src\\vertex.glsl")
-        .unwrap_or_else(|e| panic!("Failed reading vertex shader: {}", e));
-        
-    // println!("vs:\n{}",vss);
-    let fss = read_shader("src\\fragment.glsl")
-        .unwrap_or_else(|e| panic!("Failed reading fragment shader: {}", e));
-    // println!("fs:\n{}",fss);
+struct DrawObject {
+    shader_program: GLuint,
+    vao: GLuint,
+    vbo: GLuint,
+}
+struct DrawObjectParameter<'a> {
+    fragment_shader_path: &'a str,
+    vertex_shader_path: &'a str,
+}
 
+impl DrawObject {
+    fn init(&mut self, param: DrawObjectParameter) -> Result<(), String> {
+        let vss = match read_shader(param.vertex_shader_path) {
+            Ok(s) => s,
+            Err(e) => return Err(format!("Failed reading vertex shader: {}", e)),
+        };
+        let fss = match read_shader(param.fragment_shader_path) {
+            Ok(s) => s,
+            Err(e) => return Err(format!("Failed reading fragment shader: {}", e)),
+        };
+        let vs = try!(compile_shader(vss.as_slice(), gl::VERTEX_SHADER));
+        let fs = try!(compile_shader(fss.as_slice(), gl::FRAGMENT_SHADER));
+        let prog = try!(link_program(vs, fs));
+
+        // remove shaders since we've finished linking it
+        remove_shader(prog, vs);
+        remove_shader(prog, fs);
+        self.shader_program = prog;
+        Ok(())
+    }
+
+    fn close(&mut self) {
+        remove_program(self.shader_program);
+        self.shader_program = 0;
+    }
+}
+
+fn main() {
     let builder = glutin::WindowBuilder::new();
     let r = builder.with_dimensions(300, 300)
-        .with_title("rust sample".to_string())
+        .with_title("rust glsl sample".to_string())
         .build();
     let window = r.unwrap_or_else(|e| panic!("Error while building window: {}", e));
     unsafe { window.make_current() };
     gl::load_with(|symbol| window.get_proc_address(symbol));
 
-    // call gl functions after the symbols are loaded
-    let vs = compile_shader(vss.as_slice(), gl::VERTEX_SHADER)
-        .unwrap_or_else(|e| panic!("Failed compiling vertex shader: {}", e));
-    let fs = compile_shader(fss.as_slice(), gl::FRAGMENT_SHADER)
-        .unwrap_or_else(|e| panic!("Failed compiling fragment shader: {}", e));
-    let prog = link_program(vs, fs).unwrap_or_else(|e| panic!("Failed to link program: {}",e));
-
-    // remove shaders since we've finished linking it
-    remove_shader(prog, vs);
-    remove_shader(prog, fs);
+    let dop = DrawObjectParameter {
+        vertex_shader_path: "src\\vertex.glsl",
+        fragment_shader_path: "src\\fragment.glsl",
+    };
+    let mut obj = DrawObject{
+        shader_program : 0,
+        vao: 0,
+        vbo: 0,
+    };
+    obj.init(dop)
+        .unwrap_or_else(|e| panic!("DrawObject init failed: {}", e));
 
     unsafe { gl::ClearColor(0.0, 0.0, 1.0, 1.0); }
     while !window.is_closed() {
@@ -110,5 +140,5 @@ fn main() {
         unsafe { gl::Flush(); }
         window.swap_buffers();
     }
-    remove_program(prog);
+    obj.close();
 }
