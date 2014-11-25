@@ -1,6 +1,7 @@
 extern crate glutin;
 extern crate libc;
 extern crate gl;
+extern crate time;
 
 mod draw_object;
 
@@ -9,6 +10,15 @@ fn clear_screen() {
         gl::ClearColor(1.0, 1.0, 1.0, 1.0);
         gl::Clear(gl::COLOR_BUFFER_BIT);
     }
+}
+
+fn get_msec_tick(t: time::Timespec) -> i64 {
+    (t.sec * 1000 + (t.nsec / 1000).to_i64().unwrap())
+}
+
+fn get_tick() -> i64 {
+    let time = time::get_time();
+    return get_msec_tick(time);
 }
 
 fn main() {
@@ -27,14 +37,29 @@ fn main() {
     let mut obj = draw_object::DrawObject::new();
     obj.init(dop)
         .unwrap_or_else(|e| panic!("DrawObject init failed: {}", e));
-
+    let mut previous = get_tick();
+    let max_delta = 16;
     while !window.is_closed() {
         window.wait_events();
-        clear_screen();
+        let mut current = get_tick();
+        loop {
+            for _ in window.poll_events() {
+                // process events
+            }
+            let delta = current - previous;
+            if delta >= max_delta {
+                break;
+            }
+            std::io::timer::sleep(std::time::duration::Duration::milliseconds(1));
+            current = get_tick();
+        }
 
+        // draw
+        clear_screen();
         obj.draw();
         unsafe { gl::Flush(); }
         window.swap_buffers();
+        previous = current;
     }
     obj.close();
 }

@@ -10,6 +10,8 @@ git = "https://github.com/bjz/gl-rs"
 [dependencies.glutin]
 git = "https://github.com/tomaka/glutin.git"
 
-[[bin]]
+[dependencies.time]
+git = "https://github.com/rust-lang/time"
 
+[[bin]]
 name = "main"
