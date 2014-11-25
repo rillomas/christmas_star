@@ -91,7 +91,13 @@ impl DrawObject {
     }
 
     pub fn close(&mut self) {
+        unsafe {
+            gl::DeleteBuffers(1, &self.vbo);
+            gl::DeleteVertexArrays(1, &self.vao);
+        }
         util::remove_program(self.shader_program);
         self.shader_program = 0;
+        self.vbo = 0;
+        self.vao = 0;
     }
 }
