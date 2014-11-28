@@ -1,11 +1,14 @@
 [package]
 
-name = "rust_sample_2"
+name = "christmas_star"
 version = "0.0.1"
 authors = [ "Masato Hori <rillomas@gmail.com>" ]
 
 [dependencies.gl]
 git = "https://github.com/bjz/gl-rs"
+
+[dependencies.cgmath]
+git = "https://github.com/bjz/cgmath-rs"
 
 [dependencies.glutin]
 git = "https://github.com/tomaka/glutin.git"

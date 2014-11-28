@@ -1,7 +1,8 @@
 [root]
-name = "rust_sample_2"
+name = "christmas_star"
 version = "0.0.1"
 dependencies = [
+ "cgmath 0.0.1 (git+https://github.com/bjz/cgmath-rs)",
  "gl 0.0.1 (git+https://github.com/bjz/gl-rs)",
  "glutin 0.0.2 (git+https://github.com/tomaka/glutin.git)",
  "time 0.0.3 (git+https://github.com/rust-lang/time)",
@@ -14,6 +15,11 @@ source = "git+https://github.com/tomaka/android-rs-glue#70636e9c03a25c83e61f0606
 dependencies = [
  "compile_msg 0.1.1 (git+https://github.com/huonw/compile_msg)",
 ]
+
+[[package]]
+name = "cgmath"
+version = "0.0.1"
+source = "git+https://github.com/bjz/cgmath-rs#6f058eab4be48606baf476f1d82fd497c153b5a4"
 
 [[package]]
 name = "cocoa"

@@ -2,6 +2,7 @@ extern crate glutin;
 extern crate libc;
 extern crate gl;
 extern crate time;
+extern crate cgmath;
 
 mod draw;
 mod glutil;
@@ -38,7 +39,7 @@ fn main() {
         }
         // free CPU.
         // We should be checking the elapsed time to see how long we can wait here.
-        std::io::timer::sleep(std::time::duration::Duration::milliseconds(1));
+        std::io::timer::sleep(std::time::duration::Duration::milliseconds(8));
 
         // draw objects
         clear_screen();
