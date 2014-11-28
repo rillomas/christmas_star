@@ -4,44 +4,45 @@ use gl::types::{GLuint,GLfloat,GLsizeiptr,GLboolean};
 use std::ptr;
 use std::mem;
 
-mod util;
+use glutil;
+use draw;
 
-pub struct DrawObject {
+pub struct ChristmasStar {
     shader_program: GLuint,
     vao: GLuint,
     vbo: GLuint,
 }
 
-pub struct DrawObjectParameter<'a> {
+pub struct Parameter<'a> {
     pub fragment_shader_path: &'a str,
     pub vertex_shader_path: &'a str,
 }
 
-impl DrawObject {
-    pub fn new() -> DrawObject {
-        DrawObject{
+impl ChristmasStar {
+    pub fn new() -> ChristmasStar {
+        ChristmasStar{
             shader_program : 0,
             vao: 0,
             vbo: 0,
         }
     }
 
-    pub fn init(&mut self, param: DrawObjectParameter) -> Result<(), String> {
-        let vss = match util::read_shader(param.vertex_shader_path) {
+    pub fn init(&mut self, param: Parameter) -> Result<(), String> {
+        let vss = match glutil::read_shader(param.vertex_shader_path) {
             Ok(s) => s,
             Err(e) => return Err(format!("Failed reading vertex shader: {}", e)),
         };
-        let fss = match util::read_shader(param.fragment_shader_path) {
+        let fss = match glutil::read_shader(param.fragment_shader_path) {
             Ok(s) => s,
             Err(e) => return Err(format!("Failed reading fragment shader: {}", e)),
         };
-        let vs = try!(util::compile_shader(vss.as_slice(), gl::VERTEX_SHADER));
-        let fs = try!(util::compile_shader(fss.as_slice(), gl::FRAGMENT_SHADER));
-        let prog = try!(util::link_program(vs, fs));
+        let vs = try!(glutil::compile_shader(vss.as_slice(), gl::VERTEX_SHADER));
+        let fs = try!(glutil::compile_shader(fss.as_slice(), gl::FRAGMENT_SHADER));
+        let prog = try!(glutil::link_program(vs, fs));
 
         // remove shaders since we've finished linking it
-        util::remove_shader(prog, vs);
-        util::remove_shader(prog, fs);
+        glutil::remove_shader(prog, vs);
+        glutil::remove_shader(prog, fs);
         self.shader_program = prog;
 
         // initialize buffers
@@ -80,7 +81,20 @@ impl DrawObject {
         (vao, vbo)
     }
 
-    pub fn draw(&self) {
+    pub fn close(&mut self) {
+        unsafe {
+            gl::DeleteBuffers(1, &self.vbo);
+            gl::DeleteVertexArrays(1, &self.vao);
+        }
+        glutil::remove_program(self.shader_program);
+        self.shader_program = 0;
+        self.vbo = 0;
+        self.vao = 0;
+    }
+}
+
+impl draw::Draw for ChristmasStar {
+    fn draw(&self) {
         unsafe {
             gl::UseProgram(self.shader_program);
             gl::BindVertexArray(self.vao);
@@ -88,16 +102,5 @@ impl DrawObject {
             gl::BindVertexArray(0);
             gl::UseProgram(0);
         }
-    }
-
-    pub fn close(&mut self) {
-        unsafe {
-            gl::DeleteBuffers(1, &self.vbo);
-            gl::DeleteVertexArrays(1, &self.vao);
-        }
-        util::remove_program(self.shader_program);
-        self.shader_program = 0;
-        self.vbo = 0;
-        self.vao = 0;
     }
 }
