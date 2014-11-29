@@ -4,7 +4,7 @@ extern crate cgmath;
 use gl::types::{GLuint,GLfloat,GLsizeiptr,GLboolean};
 use std::ptr;
 use std::mem;
-use cgmath::{Vector3};
+use cgmath::{Vector3,Vector4};
 
 use glutil;
 use draw;
@@ -23,7 +23,7 @@ struct GlResource {
     shader_program: GLuint,
     vao: GLuint,
     vbo: GLuint,
-    triangle_num : i32,
+    indice_num : i32,
 }
 
 struct Geometry {
@@ -33,6 +33,30 @@ struct Geometry {
     long_spike_length  : f32,
     short_spike_length : f32,
     thickness : f32, 
+}
+
+struct Vertice {
+    position: cgmath::Vector4<f32>,
+    normal: cgmath::Vector3<f32>,
+    diffuse_color: cgmath::Vector4<f32>,
+}
+
+impl Vertice {
+    fn new(pos: cgmath::Vector4<f32>) -> Vertice {
+        Vertice {
+            position : pos,
+            normal: cgmath::Vector3::new(0.0,0.0,0.0),
+            diffuse_color: cgmath::Vector4::new(0.9,0.9,0.0,1.0),
+        }
+    }
+
+    // fn new(pos: cgmath::Vector4<f32>, norm: cgmath::Vector3<f32>, diffuse: cgmath::Vector3<f32>) -> Vertice {
+    //     Vertice {
+    //         position : pos,
+    //         normal : norm,
+    //         diffuse_color : diffuse,
+    //     }
+    // }
 }
 
 impl ChristmasStar {
@@ -50,7 +74,7 @@ impl ChristmasStar {
                 shader_program : 0,
                 vao: 0,
                 vbo: 0,
-                triangle_num: 0,
+                indice_num: 0,
             }
         }
     }
@@ -72,12 +96,12 @@ impl ChristmasStar {
         glutil::remove_shader(prog, vs);
         glutil::remove_shader(prog, fs);
  
-        let (vao, vbo, tri_num) = try!(init_buffers(&self.geometry));
+        let (vao, vbo, ind_num) = try!(init_buffers(&self.geometry));
         let r = &mut self.resource;
         r.shader_program = prog;
         r.vao = vao;
         r.vbo = vbo;
-        r.triangle_num = tri_num;
+        r.indice_num = ind_num;
 
         Ok(())
     }
@@ -103,7 +127,7 @@ impl draw::Draw for ChristmasStar {
             try!(glutil::check_error());
             gl::BindVertexArray(r.vao);
             try!(glutil::check_error());
-            gl::DrawArrays(gl::TRIANGLES, 0, r.triangle_num);
+            gl::DrawArrays(gl::TRIANGLES, 0, r.indice_num);
             try!(glutil::check_error());
             gl::BindVertexArray(0);
             gl::UseProgram(0);
@@ -112,14 +136,15 @@ impl draw::Draw for ChristmasStar {
     }
 }
 
-fn generate_partial_vertices(
+fn add_partial_vertices(
     center: cgmath::Vector3<f32>,
     left_canyon_offset: cgmath::Vector3<f32>,
     right_canyon_offset: cgmath::Vector3<f32>,
     left_long_spike: cgmath::Vector3<f32>,
     right_long_spike: cgmath::Vector3<f32>,
     short_spike: cgmath::Vector3<f32>,
-    depth: f32) -> Vec<GLfloat> {
+    depth: f32,
+    vertices: &mut Vec<Vertice>) {
     let lcox = left_canyon_offset.x;
     let lcoy = left_canyon_offset.y;
     let rcox = right_canyon_offset.x;
@@ -134,27 +159,24 @@ fn generate_partial_vertices(
     let ssx = short_spike.x;
     let ssy = short_spike.y;
     let top = cz+depth;
-    let vertices : Vec<GLfloat> = vec![
-        cx, cy, top, 1.0, 
-        cx+llsx, cy+llsy, cz, 1.0, 
-        cx+lcox, cy+lcoy, cz, 1.0, 
+    vertices.push(Vertice::new(cgmath::Vector4::new(cx, cy, top, 1.0)));
+    vertices.push(Vertice::new(cgmath::Vector4::new(cx+llsx, cy+llsy, cz, 1.0)));
+    vertices.push(Vertice::new(cgmath::Vector4::new(cx+lcox, cy+lcoy, cz, 1.0)));
 
-        cx, cy, top, 1.0, 
-        cx+lcox, cy+lcoy, cz, 1.0, 
-        cx+ssx, cy+ssy, cz, 1.0, 
+    vertices.push(Vertice::new(cgmath::Vector4::new(cx, cy, top, 1.0)));
+    vertices.push(Vertice::new(cgmath::Vector4::new(cx+lcox, cy+lcoy, cz, 1.0)));
+    vertices.push(Vertice::new(cgmath::Vector4::new(cx+ssx, cy+ssy, cz, 1.0)));
 
-        cx, cy, top, 1.0, 
-        cx+ssx, cy+ssy, cz, 1.0, 
-        cx+rcox, cy+rcoy, cz, 1.0, 
+    vertices.push(Vertice::new(cgmath::Vector4::new(cx, cy, top, 1.0)));
+    vertices.push(Vertice::new(cgmath::Vector4::new(cx+ssx, cy+ssy, cz, 1.0)));
+    vertices.push(Vertice::new(cgmath::Vector4::new(cx+rcox, cy+rcoy, cz, 1.0)));
 
-        cx, cy, top, 1.0, 
-        cx+rcox, cy+rcoy, cz, 1.0, 
-        cx+rlsx, cy+rlsy, cz, 1.0, 
-    ];
-    vertices
+    vertices.push(Vertice::new(cgmath::Vector4::new(cx, cy, top, 1.0)));
+    vertices.push(Vertice::new(cgmath::Vector4::new(cx+rcox, cy+rcoy, cz, 1.0)));
+    vertices.push(Vertice::new(cgmath::Vector4::new(cx+rlsx, cy+rlsy, cz, 1.0)));
 }
 
-fn generate_vertices(geom: &Geometry) -> Vec<GLfloat> {
+fn generate_vertices(geom: &Geometry) -> Vec<Vertice> {
     let c = geom.center;
     let ls = geom.long_spike_length;
     let ss = geom.short_spike_length;
@@ -162,46 +184,52 @@ fn generate_vertices(geom: &Geometry) -> Vec<GLfloat> {
     let rco = geom.right_canyon_offset;
     let depth = geom.thickness * 0.5;
 
-    // Create a quarter of a star per each generation
-    // and merge at the end.
-    let mut top_right = generate_partial_vertices(c,
+    // add a quarter of a star per each add function
+    let mut vertices : Vec<Vertice> = Vec::new();
+    // top right
+    add_partial_vertices(c,
         lco,
         rco, 
         cgmath::Vector3::new(0.0,ls,0.0),
         cgmath::Vector3::new(ls,0.0,0.0),
         cgmath::Vector3::new(ss,ss,0.0),
-        depth);
-    let btm_right = generate_partial_vertices(c,
+        depth,
+        &mut vertices);
+    // bottom right
+    add_partial_vertices(c,
         cgmath::Vector3::new(rco.x, -rco.y, lco.z),
         cgmath::Vector3::new(lco.x, -lco.y, rco.z),
         cgmath::Vector3::new(ls,0.0,0.0),
         cgmath::Vector3::new(0.0,-ls,0.0),
         cgmath::Vector3::new(ss,-ss,0.0),
-        depth);
-    let btm_left = generate_partial_vertices(c,
+        depth,
+        &mut vertices);
+    // bottom left
+    add_partial_vertices(c,
         cgmath::Vector3::new(-lco.x, -lco.y, lco.z),
         cgmath::Vector3::new(-rco.x, -rco.y, rco.z),
         cgmath::Vector3::new(0.0,-ls,0.0),
         cgmath::Vector3::new(-ls,0.0,0.0),
         cgmath::Vector3::new(-ss,-ss,0.0),
-        depth);
-    let top_left = generate_partial_vertices(c,
+        depth,
+        &mut vertices);
+    // top left
+    add_partial_vertices(c,
         cgmath::Vector3::new(-rco.x, rco.y, lco.z),
         cgmath::Vector3::new(-lco.x, lco.y, rco.z),
         cgmath::Vector3::new(-ls, 0.0, 0.0),
         cgmath::Vector3::new(0.0, ls, 0.0),
         cgmath::Vector3::new(-ss, ss, 0.0),
-        depth);
-    top_right.push_all(btm_right.as_slice());
-    top_right.push_all(btm_left.as_slice());
-    top_right.push_all(top_left.as_slice());
-    top_right
+        depth,
+        &mut vertices);
+    vertices
 }
 
 fn init_buffers(geom : &Geometry) -> Result<(GLuint, GLuint, i32), String> {
+    let vertices = generate_vertices(geom);
     let mut vao = 0;
     let mut vbo = 0;
-    let mut triangle_num = 0;
+    let mut indice_num = 0;
     unsafe {
         // Create Vertex Array Object
         gl::GenVertexArrays(1, &mut vao);
@@ -213,21 +241,40 @@ fn init_buffers(geom : &Geometry) -> Result<(GLuint, GLuint, i32), String> {
         try!(glutil::check_error());
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
         try!(glutil::check_error());
-        let vertices = generate_vertices(geom);
+        let vertice_size = mem::size_of::<Vertice>();
+        let vertice_num = vertices.len();
+        let float_size = mem::size_of::<GLfloat>();
+        // println!("Vertice size: {}", vertice_size);
+        // println!("Vertice num: {}", vertice_num);
+        // println!("float size: {}", float_size);
         gl::BufferData(gl::ARRAY_BUFFER,
-            (vertices.len() * mem::size_of::<GLfloat>()) as GLsizeiptr,
+            (vertice_num * vertice_size) as GLsizeiptr,
             mem::transmute(&vertices[0]), gl::STATIC_DRAW);
         try!(glutil::check_error());
 
-        triangle_num = (vertices.len() / 3).to_i32().unwrap();
+        indice_num = vertice_num as i32;
 
-        let pos_location = 0; // value taken from layout location in vertex shader
+        // values taken from layout location in vertex shader
+        let pos_location = 0;
+        let norm_location = 1;
+        let diffuse_location = 2;
+        let stride = vertice_size as i32;
         gl::EnableVertexAttribArray(pos_location);
         try!(glutil::check_error());
-        gl::VertexAttribPointer(pos_location, 4, gl::FLOAT, gl::FALSE as GLboolean, 0, ptr::null());
+        gl::EnableVertexAttribArray(norm_location);
+        try!(glutil::check_error());
+        gl::EnableVertexAttribArray(diffuse_location);
+        try!(glutil::check_error());
+        gl::VertexAttribPointer(pos_location, 4, gl::FLOAT, gl::FALSE as GLboolean, stride, ptr::null());
+        try!(glutil::check_error());
+        let normal_offset = mem::transmute(float_size * 4);  // normal comes after position
+        gl::VertexAttribPointer(norm_location, 3, gl::FLOAT, gl::FALSE as GLboolean, stride, normal_offset);
+        try!(glutil::check_error());
+        let diffuse_offset = mem::transmute(float_size * (4+3)); // diffuse comes after position and normal
+        gl::VertexAttribPointer(diffuse_location, 4, gl::FLOAT, gl::FALSE as GLboolean, stride, diffuse_offset);
         try!(glutil::check_error());
         gl::BindVertexArray(0);
     }
-    Ok((vao, vbo, triangle_num))
+    Ok((vao, vbo, indice_num))
 }
 
