@@ -44,7 +44,8 @@ fn main() {
         // draw objects
         clear_screen();
         for o in obj_list.iter() {
-            o.draw();
+            o.draw()
+                .unwrap_or_else(|e| panic!("Error when drawing: {}", e));
         }
         unsafe { gl::Flush(); }
         window.swap_buffers();

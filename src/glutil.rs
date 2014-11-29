@@ -67,6 +67,23 @@ pub fn remove_shader(program: GLuint, s: GLuint) {
     }
 }
 
+pub fn check_error() -> Result<(), String> {
+    let mut err;
+    unsafe {
+        err = gl::GetError();
+    }
+    match err {
+        gl::NO_ERROR => return Ok(()),
+        gl::INVALID_ENUM => return Err("Invalid enum".to_string()),
+        gl::INVALID_OPERATION => return Err("Invalid operation".to_string()),
+        // gl::STACK_OVERFLOW => return Err("Stack overflow".to_string()),
+        // gl::STACK_UNDERFLOW => return Err("Stack underflow".to_string()),
+        gl::OUT_OF_MEMORY => return Err("Out of memory".to_string()),
+        // gl::TABLE_TOO_LARGE => return Err("Table too large".to_string()),
+        _ => return Err("Unknown error".to_string()),
+    }
+}
+
 pub fn remove_program(program: GLuint) {
     unsafe {
         gl::DeleteProgram(program);
