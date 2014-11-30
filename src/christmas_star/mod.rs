@@ -4,7 +4,7 @@ extern crate cgmath;
 use gl::types::{GLuint,GLfloat,GLsizeiptr,GLboolean};
 use std::ptr;
 use std::mem;
-use cgmath::{Vector3,Vector4};
+use cgmath::{Vector3,Vector4,EuclideanVector};
 
 use glutil;
 use draw;
@@ -36,27 +36,19 @@ struct Geometry {
 }
 
 struct Vertice {
-    position: cgmath::Vector4<f32>,
+    position: cgmath::Vector3<f32>,
     normal: cgmath::Vector3<f32>,
     diffuse_color: cgmath::Vector4<f32>,
 }
 
 impl Vertice {
-    fn new(pos: cgmath::Vector4<f32>) -> Vertice {
+    fn new(pos: cgmath::Vector3<f32>, norm: cgmath::Vector3<f32>, diffuse: cgmath::Vector4<f32>) -> Vertice {
         Vertice {
             position : pos,
-            normal: cgmath::Vector3::new(0.0,0.0,0.0),
-            diffuse_color: cgmath::Vector4::new(0.9,0.9,0.0,1.0),
+            normal : norm,
+            diffuse_color : diffuse,
         }
     }
-
-    // fn new(pos: cgmath::Vector4<f32>, norm: cgmath::Vector3<f32>, diffuse: cgmath::Vector3<f32>) -> Vertice {
-    //     Vertice {
-    //         position : pos,
-    //         normal : norm,
-    //         diffuse_color : diffuse,
-    //     }
-    // }
 }
 
 impl ChristmasStar {
@@ -136,6 +128,15 @@ impl draw::Draw for ChristmasStar {
     }
 }
 
+fn calculate_normal(
+    v0: &cgmath::Vector3<f32>,
+    v1: &cgmath::Vector3<f32>,
+    v2: &cgmath::Vector3<f32>) -> cgmath::Vector3<f32> {
+    let e0 = v1.sub(v0);
+    let e1 = v2.sub(v0);
+    e0.cross(&e1).normalize()
+}
+
 fn add_partial_vertices(
     center: cgmath::Vector3<f32>,
     left_canyon_offset: cgmath::Vector3<f32>,
@@ -159,21 +160,32 @@ fn add_partial_vertices(
     let ssx = short_spike.x;
     let ssy = short_spike.y;
     let top = cz+depth;
-    vertices.push(Vertice::new(cgmath::Vector4::new(cx, cy, top, 1.0)));
-    vertices.push(Vertice::new(cgmath::Vector4::new(cx+llsx, cy+llsy, cz, 1.0)));
-    vertices.push(Vertice::new(cgmath::Vector4::new(cx+lcox, cy+lcoy, cz, 1.0)));
+    let c = cgmath::Vector3::new(cx, cy, top);
+    let lc = cgmath::Vector3::new(cx+lcox, cy+lcoy, cz);
+    let rc = cgmath::Vector3::new(cx+rcox, cy+rcoy, cz);
+    let ss = cgmath::Vector3::new(cx+ssx, cy+ssy, cz);
+    let ll = cgmath::Vector3::new(cx+llsx, cy+llsy, cz);
+    let rl = cgmath::Vector3::new(cx+rlsx, cy+rlsy, cz);
+    let n0 = calculate_normal(&c, &ll, &lc);
+    let diffuse = cgmath::Vector4::new(0.9,0.9,0.0,1.0);
+    vertices.push(Vertice::new(c, n0, diffuse));
+    vertices.push(Vertice::new(ll, n0, diffuse));
+    vertices.push(Vertice::new(lc, n0, diffuse));
 
-    vertices.push(Vertice::new(cgmath::Vector4::new(cx, cy, top, 1.0)));
-    vertices.push(Vertice::new(cgmath::Vector4::new(cx+lcox, cy+lcoy, cz, 1.0)));
-    vertices.push(Vertice::new(cgmath::Vector4::new(cx+ssx, cy+ssy, cz, 1.0)));
+    let n1 = calculate_normal(&c, &lc, &ss);
+    vertices.push(Vertice::new(c, n1, diffuse));
+    vertices.push(Vertice::new(lc, n1, diffuse));
+    vertices.push(Vertice::new(ss, n1, diffuse));
 
-    vertices.push(Vertice::new(cgmath::Vector4::new(cx, cy, top, 1.0)));
-    vertices.push(Vertice::new(cgmath::Vector4::new(cx+ssx, cy+ssy, cz, 1.0)));
-    vertices.push(Vertice::new(cgmath::Vector4::new(cx+rcox, cy+rcoy, cz, 1.0)));
+    let n2 = calculate_normal(&c, &ss, &rc);
+    vertices.push(Vertice::new(c, n2, diffuse));
+    vertices.push(Vertice::new(ss, n2, diffuse));
+    vertices.push(Vertice::new(rc, n2, diffuse));
 
-    vertices.push(Vertice::new(cgmath::Vector4::new(cx, cy, top, 1.0)));
-    vertices.push(Vertice::new(cgmath::Vector4::new(cx+rcox, cy+rcoy, cz, 1.0)));
-    vertices.push(Vertice::new(cgmath::Vector4::new(cx+rlsx, cy+rlsy, cz, 1.0)));
+    let n3 = calculate_normal(&c, &rc, &rl);
+    vertices.push(Vertice::new(c, n3, diffuse));
+    vertices.push(Vertice::new(rc, n3, diffuse));
+    vertices.push(Vertice::new(rl, n3, diffuse));
 }
 
 fn generate_vertices(geom: &Geometry) -> Vec<Vertice> {
@@ -265,12 +277,12 @@ fn init_buffers(geom : &Geometry) -> Result<(GLuint, GLuint, i32), String> {
         try!(glutil::check_error());
         gl::EnableVertexAttribArray(diffuse_location);
         try!(glutil::check_error());
-        gl::VertexAttribPointer(pos_location, 4, gl::FLOAT, gl::FALSE as GLboolean, stride, ptr::null());
+        gl::VertexAttribPointer(pos_location, 3, gl::FLOAT, gl::FALSE as GLboolean, stride, ptr::null());
         try!(glutil::check_error());
-        let normal_offset = mem::transmute(float_size * 4);  // normal comes after position
+        let normal_offset = mem::transmute(float_size * 3);  // normal comes after position
         gl::VertexAttribPointer(norm_location, 3, gl::FLOAT, gl::FALSE as GLboolean, stride, normal_offset);
         try!(glutil::check_error());
-        let diffuse_offset = mem::transmute(float_size * (4+3)); // diffuse comes after position and normal
+        let diffuse_offset = mem::transmute(float_size * (3+3)); // diffuse comes after position and normal
         gl::VertexAttribPointer(diffuse_location, 4, gl::FLOAT, gl::FALSE as GLboolean, stride, diffuse_offset);
         try!(glutil::check_error());
         gl::BindVertexArray(0);
