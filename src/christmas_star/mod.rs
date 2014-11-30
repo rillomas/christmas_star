@@ -89,6 +89,7 @@ impl ChristmasStar {
         glutil::remove_shader(prog, fs);
  
         let (vao, vbo, ind_num) = try!(init_buffers(&self.geometry));
+
         let r = &mut self.resource;
         r.shader_program = prog;
         r.vao = vao;
@@ -117,6 +118,14 @@ impl draw::Draw for ChristmasStar {
         unsafe {
             gl::UseProgram(r.shader_program);
             try!(glutil::check_error());
+
+            // update uniform variables if there were any change 
+            let cstr = "direction_to_light".to_c_str();
+            let loc = gl::GetUniformLocation(r.shader_program, cstr.as_ptr());
+            try!(glutil::check_error());
+            gl::Uniform3f(loc, -0.4, -0.5, -0.5);
+            try!(glutil::check_error());
+
             gl::BindVertexArray(r.vao);
             try!(glutil::check_error());
             gl::DrawArrays(gl::TRIANGLES, 0, r.indice_num);
