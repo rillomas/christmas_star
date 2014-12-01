@@ -4,9 +4,10 @@ extern crate gl;
 extern crate time;
 extern crate cgmath;
 
-mod draw;
+mod drawable;
 mod glutil;
 mod christmas_star;
+mod light;
 
 fn clear_screen() {
     unsafe { 
@@ -31,24 +32,41 @@ fn main() {
     let mut obj = christmas_star::ChristmasStar::new();
     obj.init(p)
         .unwrap_or_else(|e| panic!("ChristmasStar init failed: {}", e));
-    let mut obj_list : Vec<Box<draw::Draw>> = Vec::new();
-    obj_list.push(box obj);
-    while !window.is_closed() {
-        // process window evets
-        for _ in window.poll_events() {
-        }
-        // free CPU.
-        // We should be checking the elapsed time to see how long we can wait here.
-        std::io::timer::sleep(std::time::duration::Duration::milliseconds(8));
+    {
+        let mut obj_list : Vec<&mut drawable::Drawable> = Vec::new();
+        obj_list.push(&mut obj as &mut drawable::Drawable);
+        while !window.is_closed() {
+            // process window evets
+            for ev in window.poll_events() {
+                match ev {
+                    glutin::Event::KeyboardInput(_, _, key_code) => {
+                        match key_code {
+                            Some(k) => match k {
+                                glutin::VirtualKeyCode::Left => println!("Left pressed"),
+                                glutin::VirtualKeyCode::Right => println!("Right pressed"),
+                                glutin::VirtualKeyCode::Up => println!("Up pressed"),
+                                glutin::VirtualKeyCode::Down => println!("Down pressed"),
+                                _ => (),
+                            },
+                            None => (),
+                        }
+                    },
+                    _ => (),
+                }
+            }
+            // free CPU.
+            // We should be checking the elapsed time to see how long we can wait here.
+            std::io::timer::sleep(std::time::duration::Duration::milliseconds(8));
 
-        // draw objects
-        clear_screen();
-        for o in obj_list.iter() {
-            o.draw()
-                .unwrap_or_else(|e| panic!("Error when drawing: {}", e));
+            // draw objects
+            clear_screen();
+            for o in obj_list.iter() {
+                o.draw()
+                    .unwrap_or_else(|e| panic!("Error when drawing: {}", e));
+            }
+            unsafe { gl::Flush(); }
+            window.swap_buffers();
         }
-        unsafe { gl::Flush(); }
-        window.swap_buffers();
     }
     obj.close();
 }

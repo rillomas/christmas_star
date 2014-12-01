@@ -7,11 +7,13 @@ use std::mem;
 use cgmath::{Vector3,Vector4,EuclideanVector};
 
 use glutil;
-use draw;
+use drawable;
+use light;
 
 pub struct ChristmasStar {
     geometry: Geometry,
-    resource: GlResource
+    resource: GlResource,
+    directional: light::Directional,
 }
 
 pub struct Parameter<'a> {
@@ -35,15 +37,15 @@ struct Geometry {
     thickness : f32, 
 }
 
-struct Vertice {
+struct Vertex {
     position: cgmath::Vector3<f32>,
     normal: cgmath::Vector3<f32>,
     diffuse_color: cgmath::Vector4<f32>,
 }
 
-impl Vertice {
-    fn new(pos: cgmath::Vector3<f32>, norm: cgmath::Vector3<f32>, diffuse: cgmath::Vector4<f32>) -> Vertice {
-        Vertice {
+impl Vertex {
+    fn new(pos: cgmath::Vector3<f32>, norm: cgmath::Vector3<f32>, diffuse: cgmath::Vector4<f32>) -> Vertex {
+        Vertex {
             position : pos,
             normal : norm,
             diffuse_color : diffuse,
@@ -67,7 +69,8 @@ impl ChristmasStar {
                 vao: 0,
                 vbo: 0,
                 indice_num: 0,
-            }
+            },
+            directional : light::Directional::new("direction_to_light".to_string(), cgmath::Vector3::new(0.4, 0.5, 0.5)),
         }
     }
 
@@ -112,7 +115,7 @@ impl ChristmasStar {
     }
 }
 
-impl draw::Draw for ChristmasStar {
+impl drawable::Drawable for ChristmasStar {
     fn draw(&self) -> Result<(),String> {
         let r = &self.resource;
         unsafe {
@@ -120,10 +123,12 @@ impl draw::Draw for ChristmasStar {
             try!(glutil::check_error());
 
             // update uniform variables if there were any change 
-            let cstr = "direction_to_light".to_c_str();
+            let cstr = self.directional.name.to_c_str();
+            // let cstr = "direction_to_light".to_c_str();
             let loc = gl::GetUniformLocation(r.shader_program, cstr.as_ptr());
             try!(glutil::check_error());
-            gl::Uniform3f(loc, -0.4, -0.5, -0.5);
+            let dir_to_light = self.directional.position.sub(&self.geometry.center);
+            gl::Uniform3f(loc, dir_to_light.x, dir_to_light.y, dir_to_light.z);
             try!(glutil::check_error());
 
             gl::BindVertexArray(r.vao);
@@ -154,7 +159,7 @@ fn add_partial_vertices(
     right_long_spike: cgmath::Vector3<f32>,
     short_spike: cgmath::Vector3<f32>,
     depth: f32,
-    vertices: &mut Vec<Vertice>) {
+    vertices: &mut Vec<Vertex>) {
     let lcox = left_canyon_offset.x;
     let lcoy = left_canyon_offset.y;
     let rcox = right_canyon_offset.x;
@@ -175,29 +180,30 @@ fn add_partial_vertices(
     let ss = cgmath::Vector3::new(cx+ssx, cy+ssy, cz);
     let ll = cgmath::Vector3::new(cx+llsx, cy+llsy, cz);
     let rl = cgmath::Vector3::new(cx+rlsx, cy+rlsy, cz);
-    let n0 = calculate_normal(&c, &ll, &lc);
+    let n0 = calculate_normal(&c, &lc, &ll);
+    println!("n: {}", n0);
     let diffuse = cgmath::Vector4::new(0.9,0.9,0.0,1.0);
-    vertices.push(Vertice::new(c, n0, diffuse));
-    vertices.push(Vertice::new(ll, n0, diffuse));
-    vertices.push(Vertice::new(lc, n0, diffuse));
+    vertices.push(Vertex::new(c, n0, diffuse));
+    vertices.push(Vertex::new(ll, n0, diffuse));
+    vertices.push(Vertex::new(lc, n0, diffuse));
 
-    let n1 = calculate_normal(&c, &lc, &ss);
-    vertices.push(Vertice::new(c, n1, diffuse));
-    vertices.push(Vertice::new(lc, n1, diffuse));
-    vertices.push(Vertice::new(ss, n1, diffuse));
+    let n1 = calculate_normal(&c, &ss, &lc);
+    vertices.push(Vertex::new(c, n1, diffuse));
+    vertices.push(Vertex::new(lc, n1, diffuse));
+    vertices.push(Vertex::new(ss, n1, diffuse));
 
-    let n2 = calculate_normal(&c, &ss, &rc);
-    vertices.push(Vertice::new(c, n2, diffuse));
-    vertices.push(Vertice::new(ss, n2, diffuse));
-    vertices.push(Vertice::new(rc, n2, diffuse));
+    let n2 = calculate_normal(&c, &rc, &ss);
+    vertices.push(Vertex::new(c, n2, diffuse));
+    vertices.push(Vertex::new(ss, n2, diffuse));
+    vertices.push(Vertex::new(rc, n2, diffuse));
 
-    let n3 = calculate_normal(&c, &rc, &rl);
-    vertices.push(Vertice::new(c, n3, diffuse));
-    vertices.push(Vertice::new(rc, n3, diffuse));
-    vertices.push(Vertice::new(rl, n3, diffuse));
+    let n3 = calculate_normal(&c, &rl, &rc);
+    vertices.push(Vertex::new(c, n3, diffuse));
+    vertices.push(Vertex::new(rc, n3, diffuse));
+    vertices.push(Vertex::new(rl, n3, diffuse));
 }
 
-fn generate_vertices(geom: &Geometry) -> Vec<Vertice> {
+fn generate_vertices(geom: &Geometry) -> Vec<Vertex> {
     let c = geom.center;
     let ls = geom.long_spike_length;
     let ss = geom.short_spike_length;
@@ -206,7 +212,7 @@ fn generate_vertices(geom: &Geometry) -> Vec<Vertice> {
     let depth = geom.thickness * 0.5;
 
     // add a quarter of a star per each add function
-    let mut vertices : Vec<Vertice> = Vec::new();
+    let mut vertices : Vec<Vertex> = Vec::new();
     // top right
     add_partial_vertices(c,
         lco,
@@ -262,11 +268,11 @@ fn init_buffers(geom : &Geometry) -> Result<(GLuint, GLuint, i32), String> {
         try!(glutil::check_error());
         gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
         try!(glutil::check_error());
-        let vertice_size = mem::size_of::<Vertice>();
+        let vertice_size = mem::size_of::<Vertex>();
         let vertice_num = vertices.len();
         let float_size = mem::size_of::<GLfloat>();
-        // println!("Vertice size: {}", vertice_size);
-        // println!("Vertice num: {}", vertice_num);
+        // println!("Vertex size: {}", vertice_size);
+        // println!("Vertex num: {}", vertice_num);
         // println!("float size: {}", float_size);
         gl::BufferData(gl::ARRAY_BUFFER,
             (vertice_num * vertice_size) as GLsizeiptr,
