@@ -124,7 +124,6 @@ impl drawable::Drawable for ChristmasStar {
 
             // update uniform variables if there were any change 
             let cstr = self.directional.name.to_c_str();
-            // let cstr = "direction_to_light".to_c_str();
             let loc = gl::GetUniformLocation(r.shader_program, cstr.as_ptr());
             try!(glutil::check_error());
             let dir_to_light = self.directional.position.sub(&self.geometry.center);
@@ -181,7 +180,7 @@ fn add_partial_vertices(
     let ll = cgmath::Vector3::new(cx+llsx, cy+llsy, cz);
     let rl = cgmath::Vector3::new(cx+rlsx, cy+rlsy, cz);
     let n0 = calculate_normal(&c, &lc, &ll);
-    println!("n: {}", n0);
+    // println!("n: {}", n0);
     let diffuse = cgmath::Vector4::new(0.9,0.9,0.0,1.0);
     vertices.push(Vertex::new(c, n0, diffuse));
     vertices.push(Vertex::new(ll, n0, diffuse));
