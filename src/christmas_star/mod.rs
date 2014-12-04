@@ -7,8 +7,9 @@ use std::mem;
 use cgmath::{Vector3,Vector4,EuclideanVector};
 
 use glutil;
-use drawable;
+use game;
 use light;
+use control;
 
 pub struct ChristmasStar {
     geometry: Geometry,
@@ -115,7 +116,25 @@ impl ChristmasStar {
     }
 }
 
-impl drawable::Drawable for ChristmasStar {
+impl game::Object for ChristmasStar {
+    fn update(&mut self, cs: &control::State) -> Result<(),String> {
+        let delta = 0.01;
+        if cs.move_up {
+            self.directional.position.y += delta;
+        }
+        if cs.move_down {
+            self.directional.position.y += -delta;
+        }
+        if cs.move_left {
+            self.directional.position.x += -delta;
+        }
+        if cs.move_right {
+            self.directional.position.x += delta;
+        }
+        // println!("directional: {}", self.directional.position);
+        Ok(())
+    }
+
     fn draw(&self) -> Result<(),String> {
         let r = &self.resource;
         unsafe {

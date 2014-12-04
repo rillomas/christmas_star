@@ -4,7 +4,7 @@ extern crate gl;
 extern crate time;
 extern crate cgmath;
 
-mod drawable;
+mod game;
 mod glutil;
 mod christmas_star;
 mod light;
@@ -17,7 +17,7 @@ fn clear_screen() {
     }
 }
 
-fn process_main_loop(window: &glutin::Window, draw_list: &Vec<&mut drawable::Drawable>) {
+fn process_main_loop(window: &glutin::Window, obj_list: &mut Vec<&mut game::Object>) {
     let mut cs = control::State::new(); 
     while !window.is_closed() {
         // process window evets
@@ -27,16 +27,22 @@ fn process_main_loop(window: &glutin::Window, draw_list: &Vec<&mut drawable::Dra
                 _ => (),
             }
         }
-        if cs.moving() {
-            println!("control state: {}", cs);
-        }
+        // if cs.moving() {
+        //     println!("control state: {}", cs);
+        // }
         // free CPU.
         // We should be checking the elapsed time to see how long we can wait here.
         std::io::timer::sleep(std::time::duration::Duration::milliseconds(8));
 
-        // draw objects
+        // update all
+        for o in obj_list.iter_mut() {
+            o.update(&cs)
+                .unwrap_or_else(|e| panic!("Error when updating: {}", e));
+        }
+
+        // draw all
         clear_screen();
-        for o in draw_list.iter() {
+        for o in obj_list.iter() {
             o.draw()
                 .unwrap_or_else(|e| panic!("Error when drawing: {}", e));
         }
@@ -63,9 +69,9 @@ fn main() {
         .unwrap_or_else(|e| panic!("ChristmasStar init failed: {}", e));
     // need an indent here because draw_list will own the obj
     {
-        let mut draw_list : Vec<&mut drawable::Drawable> = Vec::new();
-        draw_list.push(&mut obj as &mut drawable::Drawable);
-        process_main_loop(&window, &draw_list);
+        let mut obj_list : Vec<&mut game::Object> = Vec::new();
+        obj_list.push(&mut obj as &mut game::Object);
+        process_main_loop(&window, &mut obj_list);
     }
     obj.close();
 }

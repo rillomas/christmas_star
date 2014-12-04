@@ -1,5 +1,4 @@
 extern crate cgmath;
-use drawable;
 
 use cgmath::{Vector3};
 
@@ -14,11 +13,5 @@ impl Directional {
             name: name,
             position: position,
         }
-    }
-}
-
-impl drawable::Drawable for Directional {
-    fn draw(&self) -> Result<(),String> {
-        Ok(())
     }
 }
