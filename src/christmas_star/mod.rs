@@ -71,7 +71,7 @@ impl ChristmasStar {
                 vbo: 0,
                 indice_num: 0,
             },
-            directional : light::Directional::new("direction_to_light".to_string(), cgmath::Vector3::new(0.4, 0.5, 0.5)),
+            directional : light::Directional::new("direction_to_light".to_string(), cgmath::Vector3::new(0.4, 0.5, 1.0)),
         }
     }
 
@@ -145,8 +145,10 @@ impl game::Object for ChristmasStar {
             let cstr = self.directional.name.to_c_str();
             let loc = gl::GetUniformLocation(r.shader_program, cstr.as_ptr());
             try!(glutil::check_error());
-            let dir_to_light = self.directional.position.sub(&self.geometry.center);
-            gl::Uniform3f(loc, dir_to_light.x, dir_to_light.y, dir_to_light.z);
+            let vec_to_light = self.directional.position.sub(&self.geometry.center);
+            // println!("directional: {}", self.directional.position);
+            // println!("vector to light: {}", vec_to_light);
+            gl::Uniform3f(loc, vec_to_light.x, vec_to_light.y, vec_to_light.z);
             try!(glutil::check_error());
 
             gl::BindVertexArray(r.vao);
@@ -199,23 +201,26 @@ fn add_partial_vertices(
     let ll = cgmath::Vector3::new(cx+llsx, cy+llsy, cz);
     let rl = cgmath::Vector3::new(cx+rlsx, cy+rlsy, cz);
     let n0 = calculate_normal(&c, &lc, &ll);
-    // println!("n: {}", n0);
+    // println!("n0: {}", n0);
     let diffuse = cgmath::Vector4::new(0.9,0.9,0.0,1.0);
     vertices.push(Vertex::new(c, n0, diffuse));
     vertices.push(Vertex::new(ll, n0, diffuse));
     vertices.push(Vertex::new(lc, n0, diffuse));
 
     let n1 = calculate_normal(&c, &ss, &lc);
+    // println!("n1: {}", n1);
     vertices.push(Vertex::new(c, n1, diffuse));
     vertices.push(Vertex::new(lc, n1, diffuse));
     vertices.push(Vertex::new(ss, n1, diffuse));
 
     let n2 = calculate_normal(&c, &rc, &ss);
+    // println!("n2: {}", n2);
     vertices.push(Vertex::new(c, n2, diffuse));
     vertices.push(Vertex::new(ss, n2, diffuse));
     vertices.push(Vertex::new(rc, n2, diffuse));
 
     let n3 = calculate_normal(&c, &rl, &rc);
+    // println!("n3: {}", n3);
     vertices.push(Vertex::new(c, n3, diffuse));
     vertices.push(Vertex::new(rc, n3, diffuse));
     vertices.push(Vertex::new(rl, n3, diffuse));
