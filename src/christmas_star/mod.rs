@@ -8,13 +8,13 @@ use cgmath::{Vector3,Vector4,EuclideanVector};
 
 use glutil;
 use game;
-use light;
+use light::directional;
 use control;
 
 pub struct ChristmasStar {
     geometry: Geometry,
     resource: GlResource,
-    directional: light::Directional,
+    directional: directional::Light,
 }
 
 pub struct Parameter<'a> {
@@ -27,6 +27,7 @@ struct GlResource {
     vao: GLuint,
     vbo: GLuint,
     indice_num : i32,
+    directional_name : String,
 }
 
 struct Geometry {
@@ -70,8 +71,9 @@ impl ChristmasStar {
                 vao: 0,
                 vbo: 0,
                 indice_num: 0,
+                directional_name: "direction_to_light".to_string(),
             },
-            directional : light::Directional::new("direction_to_light".to_string(), cgmath::Vector3::new(0.4, 0.5, 1.0)),
+            directional : directional::Light::new(cgmath::Vector3::new(0.4, 0.5, 1.0)),
         }
     }
 
@@ -100,10 +102,18 @@ impl ChristmasStar {
         r.vbo = vbo;
         r.indice_num = ind_num;
 
+        let p = directional::Parameter {
+            vertex_shader_path: "src\\light\\directional\\vertex.glsl",
+            fragment_shader_path: "src\\light\\directional\\fragment.glsl",
+        };
+        try!(self.directional.init(p));
+
         Ok(())
     }
 
     pub fn close(&mut self) {
+        self.directional.close();
+
         let r = &mut self.resource;
         unsafe {
             gl::DeleteBuffers(1, &r.vbo);
@@ -118,36 +128,22 @@ impl ChristmasStar {
 
 impl game::Object for ChristmasStar {
     fn update(&mut self, cs: &control::State) -> Result<(),String> {
-        let delta = 0.01;
-        if cs.move_up {
-            self.directional.position.y += delta;
-        }
-        if cs.move_down {
-            self.directional.position.y += -delta;
-        }
-        if cs.move_left {
-            self.directional.position.x += -delta;
-        }
-        if cs.move_right {
-            self.directional.position.x += delta;
-        }
-        // println!("directional: {}", self.directional.position);
+        try!(self.directional.update(cs));
         Ok(())
     }
 
     fn draw(&self) -> Result<(),String> {
+        try!(self.directional.draw());
         let r = &self.resource;
         unsafe {
             gl::UseProgram(r.shader_program);
             try!(glutil::check_error());
 
-            // update uniform variables if there were any change 
-            let cstr = self.directional.name.to_c_str();
+            // update light position
+            let cstr = r.directional_name.to_c_str();
             let loc = gl::GetUniformLocation(r.shader_program, cstr.as_ptr());
             try!(glutil::check_error());
-            let vec_to_light = self.directional.position.sub(&self.geometry.center);
-            // println!("directional: {}", self.directional.position);
-            // println!("vector to light: {}", vec_to_light);
+            let vec_to_light = self.directional.vector_from(&self.geometry.center);
             gl::Uniform3f(loc, vec_to_light.x, vec_to_light.y, vec_to_light.z);
             try!(glutil::check_error());
 
