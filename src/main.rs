@@ -60,12 +60,8 @@ fn main() {
     unsafe { window.make_current() };
     gl::load_with(|symbol| window.get_proc_address(symbol));
 
-    let p = christmas_star::Parameter {
-        vertex_shader_path: "src\\christmas_star\\vertex.glsl",
-        fragment_shader_path: "src\\christmas_star\\fragment.glsl",
-    };
     let mut obj = christmas_star::ChristmasStar::new();
-    obj.init(p)
+    obj.init()
         .unwrap_or_else(|e| panic!("ChristmasStar init failed: {}", e));
     // need an indent here because draw_list will own the obj
     {

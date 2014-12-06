@@ -14,11 +14,6 @@ pub struct Light {
     resource : GlResource,
 }
 
-pub struct Parameter<'a> {
-    pub fragment_shader_path: &'a str,
-    pub vertex_shader_path: &'a str,
-}
-
 struct Vertex {
     position: cgmath::Vector3<f32>,
     diffuse_color: cgmath::Vector4<f32>,
@@ -55,15 +50,9 @@ impl Light {
     }
 
 
-    pub fn init(&mut self, param: Parameter) -> Result<(), String> {
-        let vss = match glutil::read_shader(param.vertex_shader_path) {
-            Ok(s) => s,
-            Err(e) => return Err(format!("Failed reading vertex shader: {}", e)),
-        };
-        let fss = match glutil::read_shader(param.fragment_shader_path) {
-            Ok(s) => s,
-            Err(e) => return Err(format!("Failed reading fragment shader: {}", e)),
-        };
+    pub fn init(&mut self) -> Result<(), String> {
+        let vss = include_str!("vertex.glsl");
+        let fss = include_str!("fragment.glsl");
         let vs = try!(glutil::compile_shader(vss.as_slice(), gl::VERTEX_SHADER));
         let fs = try!(glutil::compile_shader(fss.as_slice(), gl::FRAGMENT_SHADER));
         let prog = try!(glutil::link_program(vs, fs));

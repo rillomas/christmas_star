@@ -17,11 +17,6 @@ pub struct ChristmasStar {
     directional: directional::Light,
 }
 
-pub struct Parameter<'a> {
-    pub fragment_shader_path: &'a str,
-    pub vertex_shader_path: &'a str,
-}
-
 struct GlResource {
     shader_program: GLuint,
     vao: GLuint,
@@ -77,15 +72,9 @@ impl ChristmasStar {
         }
     }
 
-    pub fn init(&mut self, param: Parameter) -> Result<(), String> {
-        let vss = match glutil::read_shader(param.vertex_shader_path) {
-            Ok(s) => s,
-            Err(e) => return Err(format!("Failed reading vertex shader: {}", e)),
-        };
-        let fss = match glutil::read_shader(param.fragment_shader_path) {
-            Ok(s) => s,
-            Err(e) => return Err(format!("Failed reading fragment shader: {}", e)),
-        };
+    pub fn init(&mut self) -> Result<(), String> {
+        let vss = include_str!("vertex.glsl");
+        let fss = include_str!("fragment.glsl");
         let vs = try!(glutil::compile_shader(vss.as_slice(), gl::VERTEX_SHADER));
         let fs = try!(glutil::compile_shader(fss.as_slice(), gl::FRAGMENT_SHADER));
         let prog = try!(glutil::link_program(vs, fs));
@@ -102,11 +91,7 @@ impl ChristmasStar {
         r.vbo = vbo;
         r.indice_num = ind_num;
 
-        let p = directional::Parameter {
-            vertex_shader_path: "src\\light\\directional\\vertex.glsl",
-            fragment_shader_path: "src\\light\\directional\\fragment.glsl",
-        };
-        try!(self.directional.init(p));
+        try!(self.directional.init());
 
         Ok(())
     }
