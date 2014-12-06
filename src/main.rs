@@ -63,10 +63,10 @@ fn main() {
     let mut obj = christmas_star::ChristmasStar::new();
     obj.init()
         .unwrap_or_else(|e| panic!("ChristmasStar init failed: {}", e));
-    // need an indent here because draw_list will own the obj
+    // need an indent here because obj_list will own the obj
     {
         let mut obj_list : Vec<&mut game::Object> = Vec::new();
-        obj_list.push(&mut obj as &mut game::Object);
+        obj_list.push(&mut obj);
         process_main_loop(&window, &mut obj_list);
     }
     obj.close();

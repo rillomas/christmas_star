@@ -4,6 +4,8 @@ extern crate cgmath;
 use gl::types::{GLuint,GLfloat,GLsizeiptr,GLboolean};
 use std::ptr;
 use std::mem;
+use std::f32::consts;
+use std::num::FloatMath;
 use cgmath::{Vector3,Vector4};
 use glutil;
 use game;
@@ -131,7 +133,7 @@ impl game::Object for Light {
 
             gl::BindVertexArray(r.vao);
             try!(glutil::check_error());
-            gl::DrawArrays(gl::POINTS, 0, r.indice_num);
+            gl::DrawArrays(gl::LINE_LOOP, 0, r.indice_num);
             try!(glutil::check_error());
             gl::BindVertexArray(0);
             gl::UseProgram(0);
@@ -140,9 +142,24 @@ impl game::Object for Light {
     }
 }
 
-fn init_buffers(position : &cgmath::Vector3<f32>) -> Result<(GLuint, GLuint, i32), String> {
+fn calculate_vertices(vertices: &mut Vec<Vertex>) {
     let diffuse = cgmath::Vector4::new(1.0,0.0,0.0,1.0);
-    let vertices = vec![Vertex::new(*position, diffuse)];
+    // calculate circle coordinates
+    let div = 8i;
+    let radius = 0.03;
+    let rad_per_div = consts::PI_2 / div.to_f32().unwrap();
+    for i in range(0,div) {
+        let cur_rad = rad_per_div * i.to_f32().unwrap();
+        let x = cur_rad.cos() * radius;
+        let y = cur_rad.sin() * radius;
+        let v = Vertex::new(cgmath::Vector3::new(x,y,0.0), diffuse);
+        vertices.push(v);
+    }
+}
+
+fn init_buffers(position : &cgmath::Vector3<f32>) -> Result<(GLuint, GLuint, i32), String> {
+    let mut vertices : Vec<Vertex> = Vec::new();
+    calculate_vertices(&mut vertices);
     let mut vao = 0;
     let mut vbo = 0;
     let mut indice_num = 0;

@@ -118,7 +118,6 @@ impl game::Object for ChristmasStar {
     }
 
     fn draw(&self) -> Result<(),String> {
-        try!(self.directional.draw());
         let r = &self.resource;
         unsafe {
             gl::UseProgram(r.shader_program);
@@ -139,6 +138,7 @@ impl game::Object for ChristmasStar {
             gl::BindVertexArray(0);
             gl::UseProgram(0);
         }
+        try!(self.directional.draw());
         Ok(())
     }
 }
