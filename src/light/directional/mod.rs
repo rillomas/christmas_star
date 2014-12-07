@@ -106,9 +106,6 @@ impl game::Object for Light {
         if cs.move_right {
             self.position.x += delta;
         }
-
-        // recalculate the mvp matrix
-        // println!("directional: {}", self.position);
         Ok(())
     }
 
