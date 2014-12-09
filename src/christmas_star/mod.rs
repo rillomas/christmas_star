@@ -260,7 +260,7 @@ fn init_buffers(geom : &Geometry) -> Result<(GLuint, GLuint, i32), String> {
     let vertices = generate_vertices(geom);
     let mut vao = 0;
     let mut vbo = 0;
-    let mut indice_num = 0;
+    let mut indice_num;
     unsafe {
         // Create Vertex Array Object
         gl::GenVertexArrays(1, &mut vao);

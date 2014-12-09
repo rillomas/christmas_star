@@ -1,7 +1,6 @@
 extern crate glutin;
 extern crate libc;
 extern crate gl;
-extern crate time;
 extern crate cgmath;
 
 mod game;

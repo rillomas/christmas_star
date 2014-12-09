@@ -2,7 +2,6 @@ extern crate gl;
 
 use gl::types::{GLenum,GLuint,GLchar,GLint};
 use std::ptr;
-use std::io::{File,IoResult};
 
 pub fn compile_shader(src: &str, ty: GLenum) -> Result<GLuint, String> {
     let shader;
@@ -54,11 +53,11 @@ pub fn link_program(vs: GLuint, fs: GLuint) -> Result<GLuint, String> {
     Ok(program)
 }
 
-pub fn read_shader(path: &str) -> IoResult<String> {
-    let mut sf = try!(File::open(&Path::new(path)));
-    let ss = try!(sf.read_to_string());
-    Ok(ss)
-}
+// pub fn read_shader(path: &str) -> IoResult<String> {
+//     let mut sf = try!(File::open(&Path::new(path)));
+//     let ss = try!(sf.read_to_string());
+//     Ok(ss)
+// }
 
 pub fn remove_shader(program: GLuint, s: GLuint) {
     unsafe {

@@ -19,10 +19,9 @@ impl State {
         }
     }
 
-    pub fn moving(&self) -> bool {
-        self.move_up || self.move_down || self.move_left || self.move_right
-    }
-
+    // pub fn moving(&self) -> bool {
+    //     self.move_up || self.move_down || self.move_left || self.move_right
+    // }
 
     pub fn handle_key_input(&mut self, elem_state: glutin::ElementState, key_code : Option<glutin::VirtualKeyCode>) {
         let pressed = elem_state == glutin::ElementState::Pressed;

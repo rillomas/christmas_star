@@ -63,7 +63,7 @@ impl Light {
         glutil::remove_shader(prog, vs);
         glutil::remove_shader(prog, fs);
  
-        let (vao, vbo, ind_num) = try!(init_buffers(&cgmath::Vector3::new(0.0,0.0,0.0)));
+        let (vao, vbo, ind_num) = try!(init_buffers());
 
         let r = &mut self.resource;
         r.shader_program = prog;
@@ -154,12 +154,12 @@ fn calculate_vertices(vertices: &mut Vec<Vertex>) {
     }
 }
 
-fn init_buffers(position : &cgmath::Vector3<f32>) -> Result<(GLuint, GLuint, i32), String> {
+fn init_buffers() -> Result<(GLuint, GLuint, i32), String> {
     let mut vertices : Vec<Vertex> = Vec::new();
     calculate_vertices(&mut vertices);
     let mut vao = 0;
     let mut vbo = 0;
-    let mut indice_num = 0;
+    let mut indice_num;
     unsafe {
         // Create Vertex Array Object
         gl::GenVertexArrays(1, &mut vao);
