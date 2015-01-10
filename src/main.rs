@@ -55,7 +55,10 @@ fn main() {
     let r = builder.with_dimensions(300, 300)
         .with_title("rust glsl sample".to_string())
         .build();
-    let window = r.unwrap_or_else(|e| panic!("Error while building window: {}", e));
+    let window = r.unwrap_or_else(|e| match e {
+        glutin::CreationError::OsError(s) => panic!("Error while building window: {}", s),
+        glutin::CreationError::NotSupported => panic!("Current OS is not suported"),
+    });
     unsafe { window.make_current() };
     gl::load_with(|symbol| window.get_proc_address(symbol));
 

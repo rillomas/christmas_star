@@ -5,8 +5,9 @@ use gl::types::{GLuint,GLfloat,GLsizeiptr,GLboolean};
 use std::ptr;
 use std::mem;
 use std::f32::consts;
-use std::num::FloatMath;
-use cgmath::{Vector3,Vector4};
+use std::ffi::CString;
+use std::num::Float;
+use cgmath::{Vector,Vector3,Vector4};
 use glutil;
 use game;
 use control;
@@ -75,7 +76,7 @@ impl Light {
     }
 
     pub fn vector_from(&self, target : &cgmath::Vector3<f32>) -> cgmath::Vector3<f32> {
-        self.position.sub(target)
+        self.position.sub_v(target)
     }
 
     pub fn close(&mut self) {
@@ -115,7 +116,7 @@ impl game::Object for Light {
             gl::UseProgram(r.shader_program);
             try!(glutil::check_error());
 
-            let cstr = r.mvp_name.to_c_str();
+            let cstr = CString::from_slice(r.mvp_name.as_bytes());
             let mvp = gl::GetUniformLocation(r.shader_program, cstr.as_ptr());
             try!(glutil::check_error());
             let p = &self.position;
@@ -142,11 +143,11 @@ impl game::Object for Light {
 fn calculate_vertices(vertices: &mut Vec<Vertex>) {
     let diffuse = cgmath::Vector4::new(1.0,0.0,0.0,1.0);
     // calculate circle coordinates
-    let div = 8i;
+    let div = 8;
     let radius = 0.03;
-    let rad_per_div = consts::PI_2 / div.to_f32().unwrap();
+    let rad_per_div = consts::PI_2 / (div as f32);
     for i in range(0,div) {
-        let cur_rad = rad_per_div * i.to_f32().unwrap();
+        let cur_rad = rad_per_div * (i as f32);
         let x = cur_rad.cos() * radius;
         let y = cur_rad.sin() * radius;
         let v = Vertex::new(cgmath::Vector3::new(x,y,0.0), diffuse);
