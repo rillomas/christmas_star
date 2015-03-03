@@ -38,7 +38,7 @@ impl State {
     }
 }
 
-impl fmt::Show for State {
+impl fmt::Display for State {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "move_up: {}, move_down: {}, move_left: {}, move_right: {}",
             self.move_up, self.move_down, self.move_left, self.move_right)

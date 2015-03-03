@@ -6,6 +6,7 @@ use std::ptr;
 use std::mem;
 use std::f32::consts;
 use std::ffi::CString;
+use std::error::Error;
 use std::num::Float;
 use cgmath::{Vector,Vector3,Vector4};
 use glutil;
@@ -116,7 +117,11 @@ impl game::Object for Light {
             gl::UseProgram(r.shader_program);
             try!(glutil::check_error());
 
-            let cstr = CString::from_slice(r.mvp_name.as_bytes());
+            let cstr;
+            match CString::new(r.mvp_name.as_bytes()) {
+                Ok(s) => cstr = s,
+                Err(e) => return Err(e.description().to_string())
+            }
             let mvp = gl::GetUniformLocation(r.shader_program, cstr.as_ptr());
             try!(glutil::check_error());
             let p = &self.position;
@@ -146,7 +151,7 @@ fn calculate_vertices(vertices: &mut Vec<Vertex>) {
     let div = 8;
     let radius = 0.03;
     let rad_per_div = consts::PI_2 / (div as f32);
-    for i in range(0,div) {
+    for i in 0..div {
         let cur_rad = rad_per_div * (i as f32);
         let x = cur_rad.cos() * radius;
         let y = cur_rad.sin() * radius;

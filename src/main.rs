@@ -31,7 +31,7 @@ fn process_main_loop(window: &glutin::Window, obj_list: &mut Vec<&mut game::Obje
         // }
         // free CPU.
         // We should be checking the elapsed time to see how long we can wait here.
-        std::io::timer::sleep(std::time::duration::Duration::milliseconds(8));
+        std::old_io::timer::sleep(std::time::duration::Duration::milliseconds(8));
 
         // update all
         for o in obj_list.iter_mut() {

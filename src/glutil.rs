@@ -3,13 +3,18 @@ extern crate gl;
 use gl::types::{GLenum,GLuint,GLchar,GLint};
 use std::ptr;
 use std::ffi::CString;
+use std::error::Error;
 
 pub fn compile_shader(src: &str, ty: GLenum) -> Result<GLuint, String> {
     let shader;
     unsafe {
         shader = gl::CreateShader(ty);
         // Attempt to compile the shader
-        let cstr = CString::from_slice(src.as_bytes());
+        let cstr;
+        match CString::new(src.as_bytes()) {
+            Ok(s) => cstr = s,
+            Err(e) => return Err(e.description().to_string())
+        }
         gl::ShaderSource(shader, 1, &cstr.as_ptr(), ptr::null());
         gl::CompileShader(shader);
         // Get the compile status

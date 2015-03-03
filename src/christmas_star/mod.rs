@@ -5,6 +5,7 @@ use gl::types::{GLuint,GLfloat,GLsizeiptr,GLboolean};
 use std::ptr;
 use std::mem;
 use std::ffi::CString;
+use std::error::Error;
 use cgmath::{Vector,Vector3,Vector4,EuclideanVector};
 
 use glutil;
@@ -125,7 +126,11 @@ impl game::Object for ChristmasStar {
             try!(glutil::check_error());
 
             // update light position
-            let cstr = CString::from_slice(r.directional_name.as_bytes());
+            let cstr;
+            match CString::new(r.directional_name.as_bytes()) {
+                Ok(s) => cstr = s,
+                Err(e) => return Err(e.description().to_string())
+            }
             let loc = gl::GetUniformLocation(r.shader_program, cstr.as_ptr());
             try!(glutil::check_error());
             let vec_to_light = self.directional.vector_from(&self.geometry.center);
