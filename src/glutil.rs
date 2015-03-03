@@ -24,9 +24,13 @@ pub fn compile_shader(src: &str, ty: GLenum) -> Result<GLuint, String> {
         if status != (gl::TRUE as GLint) {
             let mut len = 0;
             gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut len);
-            let mut buf = Vec::with_capacity(len as usize - 1); // subtract 1 to skip the trailing null character
-            gl::GetShaderInfoLog(shader, len, ptr::null_mut(), buf.as_mut_ptr() as *mut GLchar);
-            match String::from_utf8(buf) {
+            let cap = len as usize - 1;// subtract 1 to skip the trailing null character
+            let mut buf = Vec::with_capacity(cap); 
+            let mut logLength = 0;
+            let vp = buf.as_mut_ptr();
+            gl::GetShaderInfoLog(shader, len, &mut logLength, vp as *mut GLchar);
+            let rebuilt = Vec::from_raw_parts(vp, logLength as usize, cap);
+            match String::from_utf8(rebuilt) {
                 Ok(s) => return Err(s),
                 Err(_) => return Err("Shader compile failed. Since the ShaderInfoLog is not valid utf8, the error log could not be retrived".to_string())
             }
